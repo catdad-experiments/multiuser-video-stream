@@ -38,9 +38,33 @@ task.on('error', (err) => {
   console.error(err);
 });
 
-setTimeout(() => {
-  console.log('CLOSING THE STREAM... I THINK');
+//setTimeout(() => {
+//  console.log('CLOSING THE STREAM... I THINK');
+//
+//  // we tell ffmpeg to stop by writing 'q'
+//  task.stdin.write('q');
+//}, 5000);
 
-  // we tell ffmpeg to stop by writing 'q'
-  task.stdin.write('q');
-}, 5000);
+require('http').createServer(function(req, res) {
+    console.log(req.method, req.url);
+
+    if (/homepage/.test(req.url)) {
+        res.writeHead(200, { 'content-type': 'text/html' });
+        return res.end(`
+        <video autoplay>
+            <source
+                src="/stream"
+                type="video/mp4"
+            >
+        </video>
+        `);
+    }
+
+    if (/stream/.test(req.url)) {
+        res.writeHead(200, { 'content-type': 'video/mp4' });
+        return task.stdout.pipe(res);
+    }
+
+    res.writeHead(404);
+    res.end();
+}).listen(8888);

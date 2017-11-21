@@ -19,16 +19,25 @@ module.exports = function(server) {
       socket.send(chunk);
     }
 
-    stream.on('data', onChunk);
+    function addEvents() {
+      stream.on('data', onChunk);
+    }
+
+    function removeEvents() {
+      stream.removeListener('data', onChunk);
+    }
+
 
     socket.on('error', err => {
-      console.log('socket error', err);
-      stream.removeListener('data', onChunk);
+      console.log('socket error:', err);
+      removeEvents();
     });
 
     socket.on('close', (code, msg) => {
-      console.log('socket closed with', code, msg);
-      stream.removeListener('data', onChunk);
+      console.log('socket closed with:', code, msg);
+      removeEvents();
     });
+
+    addEvents();
   });
 };

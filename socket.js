@@ -15,16 +15,20 @@ module.exports = function(server) {
 
     var stream = videoStream.get();
 
-    stream.on('data', chunk => {
+    function onChunk(chunk) {
       socket.send(chunk);
-    });
+    }
+
+    stream.on('data', onChunk);
 
     socket.on('error', err => {
       console.log('socket error', err);
+      stream.removeListener('data', onChunk);
     });
 
     socket.on('close', (code, msg) => {
       console.log('socket closed with', code, msg);
+      stream.removeListener('data', onChunk);
     });
   });
 };

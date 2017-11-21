@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Client</title>
+  <script src="http://jsmpeg.com/jsmpeg.min.js"></script>
+</head>
+<body>
+
+<!--
+  try this one:
+  https://stackoverflow.com/questions/16465305/video-stream-through-websocket-to-video-tag
+-->
+
+<canvas></canvas>
+
+<script>
+  var url = 'ws://localhost:${port}/stream';
+  var canvas = document.querySelector('canvas');
+  var player = new JSMpeg.Player(url, {
+    canvas: canvas,
+    autoplay: true,
+    video: true,
+    audio: false
+  });
+</script>
+</body>
+</html>

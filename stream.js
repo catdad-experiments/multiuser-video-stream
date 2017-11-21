@@ -22,34 +22,57 @@ var taskOptions = {
   windowsVerbatimArguments: true
 };
 
-var task;
-var stream = through();
+var stream;
 var counter = 0;
+
+function flush(stream) {
+  // If nothing is reading this stream, add a listener
+  // so that it is always flowing. This is a live video
+  // stream, so you only get the data once you start
+  // listening. Other data is safe to discard.
+  if (stream._readableState.flowing === null) {
+    stream.on('data', () => {});
+  }
+}
 
 function closeVideo() {
   // we tell ffmpeg to stop by writing 'q'
-  task.stdin.write('q');
+//  task.stdin.write('q');
 }
 
-function get() {
-
+function newTask(stream) {
   var task = spawn(executable, tokens, taskOptions);
 
-  // always flush the data, this is a live video stream,
-  // so you only get the live data... there is no buffer
   task.stdout.pipe(stream);
-  // TODO this should happen only once, not once on each get
-  stream.on('data', () => {
-    console.log('read chunk');
-  });
+  flush(stream);
 
   task.on('exit', (...args) => {
     console.log('EXITED WITH:', ...args);
+    task = null;
+
+    // we exited... restart this task
+    newTask(stream);
   });
 
   task.on('error', (err) => {
     console.error('FFPMEG err:', err);
+    task = null;
+
+    // we errored, restart this task
+    newTask(stream);
   });
+}
+
+function get() {
+  // if we already created a stream,
+  // just return that stream
+  if (stream) {
+    return stream;
+  }
+
+  stream = through();
+
+  newTask(stream);
 
   return stream;
 }

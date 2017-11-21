@@ -13,7 +13,7 @@ var server = http.createServer(function(req, res) {
 <!DOCTYPE html>
 <html>
 <body>
-  <div class="jsmpeg full-width" data-url="ws://localhost:${port}/stream"></div>
+  <div class="jsmpeg full-width" data-url="ws://localhost:${port}/stream" data-autoplay="true"></div>
   <script src="http://jsmpeg.com/jsmpeg.min.js"></script>
 </body>
 </html>
@@ -24,8 +24,6 @@ var server = http.createServer(function(req, res) {
     res.end();
 });
 
-require('./stream.js').get().pipe(require('fs').createWriteStream('video.mp4'));
+socketServer(server);
 
-//socketServer(server);
-//
-//server.listen(port);
+server.listen(port);

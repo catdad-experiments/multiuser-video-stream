@@ -35,6 +35,7 @@ function flush(stream) {
   }
 }
 
+// TODO add ability to actually close the video
 function closeVideo() {
   // we tell ffmpeg to stop by writing 'q'
 //  task.stdin.write('q');

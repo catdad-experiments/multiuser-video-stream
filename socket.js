@@ -27,7 +27,6 @@ module.exports = function(server) {
       stream.removeListener('data', onChunk);
     }
 
-
     socket.on('error', err => {
       console.log('socket error:', err);
       removeEvents();

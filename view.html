@@ -36,7 +36,7 @@
   function getStream(sourceBuffer) {
     var socket = new WebSocket(source);
 
-    var buffer = new Uint8Array();
+    var buffer = [];
     var flushed = true;
 
     console.log(buffer);
@@ -49,38 +49,33 @@
 
     function writeBuffer() {
       console.log('WRITING BUFFER TO MEDIA STREAM');
-      sourceBuffer.appendBuffer(buffer);
-      buffer = new Uint8Array();
 
-      video.play();
-    }
+      // capture current buffer and replace it
+      var tempBuffer = buffer;
+      buffer = [];
 
-    function readIntoBuffer(blob) {
-      // temp: disable buffer when it gets too big,
-      // TODO figure out how to actually play video so buffer flushes
-      if (buffer.length > 100000) {
-        console.log('CLOSING SOCKET');
-        closeSocket();
-        return;
-      }
+      var arrBuffer = combine.apply(null, tempBuffer);
 
-      var fileReader = new FileReader();
-
-      fileReader.onload = function (ev) {
-        console.log('finished reading buffer');
-        buffer = combine(buffer, new Uint8Array(ev.target.result));
-
-        if (flushed) {
-          writeBuffer();
+      (function readChunk() {
+        if (!tempBuffer.length) {
+          console.log('DONE FLUSHING BUFFER');
+          return;
         }
 
-        if (video.paused) {
-          console.log('PLAYING VIDEO');
-          video.play();
-        }
-      };
+        var blob = tempBuffer.shift();
+        var fileReader = new FileReader();
 
-      fileReader.readAsArrayBuffer(blob);
+        fileReader.onload = function (ev) {
+          sourceBuffer.appendBuffer(new Uint8Array(ev.target.result));
+
+          if (video.paused) {
+            console.log('PLAYING VIDEO');
+            video.play();
+          }
+        };
+
+        fileReader.readAsArrayBuffer(blob);
+      }());
     }
 
     sourceBuffer.addEventListener('updateend', function (ev) {
@@ -96,7 +91,19 @@
       console.log('new socket data, buffer size is', buffer.length);
       console.log('socket data:', ev.data);
 
-      readIntoBuffer(ev.data);
+      // temp: disable buffer when it gets too big,
+      // TODO figure out how to actually play video so buffer flushes
+      if (buffer.length === 20) {
+        console.log('CLOSING SOCKET');
+        closeSocket();
+        return;
+      }
+
+      buffer.push(ev.data);
+
+      if (flushed) {
+        writeBuffer();
+      }
 
       flushed = false;
     };

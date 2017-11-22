@@ -14,7 +14,7 @@ var hls = `-preset ultrafast -tune zerolatency -r 10 -crf 10 -b:v 1M -bufsize 30
 // note: add to the end of opts to flip a video
 var flip = `-vf hflip`;
 
-var command = `${binaryBits} ${input} ${codecs} ${hls} -`;
+var command = `${binaryBits} ${input} ${codecs} ${mpegts} -`;
 
 var executable = command.split(' ')[0];
 var tokens = command.match(/\S+|"[^"]+"/g).slice(1);

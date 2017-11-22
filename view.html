@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Client</title>
-  <script src="http://jsmpeg.com/jsmpeg.min.js"></script>
 </head>
 <body>
 
@@ -12,17 +11,97 @@
   https://stackoverflow.com/questions/16465305/video-stream-through-websocket-to-video-tag
 -->
 
-<canvas></canvas>
+<video></video>
 
 <script>
-  var url = 'ws://localhost:${port}/stream';
-  var canvas = document.querySelector('canvas');
-  var player = new JSMpeg.Player(url, {
-    canvas: canvas,
-    autoplay: true,
-    video: true,
-    audio: false
-  });
+
+  var ms = new MediaSource();
+  var video = document.querySelector('video');
+  var source = 'ws://localhost:8889/stream';
+  var mime = 'video/mp4; codecs="avc1.42E01E, mp4a.40.2"';
+//  var mime = 'video/webm; codecs="vorbis,vp8"';
+
+  video.src = window.URL.createObjectURL(ms);
+
+  function combine() {
+    return [].reduce.call(arguments, function (memo, arr) {
+      var m = new Uint8Array(memo.length + arr.length);
+      m.set(memo);
+      m.set(arr, memo.length);
+
+      return m;
+    }, new Uint8Array());
+  }
+
+  function getStream(sourceBuffer) {
+    var socket = new WebSocket(source);
+
+    var buffer = new Uint8Array();
+    var flushed = true;
+
+    console.log(buffer);
+
+    function writeBuffer() {
+      console.log('WRITING BUFFER TO MEDIA STREAM');
+      sourceBuffer.appendBuffer(buffer);
+      buffer = new Uint8Array();
+    }
+
+    function readIntoBuffer(blob) {
+      if (buffer.length > 100000) {
+        return;
+      }
+
+      var fileReader = new FileReader();
+
+      fileReader.onload = function (ev) {
+        buffer = combine(buffer, new Uint8Array(ev.target.result));
+
+        if (flushed) {
+          writeBuffer();
+        }
+      };
+
+      fileReader.readAsArrayBuffer(blob);
+    }
+
+
+    sourceBuffer.addEventListener('updateend', function (ev) {
+      flushed = true;
+      console.log('update ended, buffer size is', buffer.length);
+
+      if (buffer.length) {
+        writeBuffer();
+      }
+    });
+
+    socket.onmessage = function (ev) {
+      console.log('new socket data, buffer size is', buffer.length);
+      console.log('socket data:', ev.data);
+
+      readIntoBuffer(ev.data);
+
+      flushed = false;
+    };
+  }
+
+  function onOpen(ev) {
+    console.log('source opened', ev);
+
+    var sourceBuffer = ms.addSourceBuffer(mime);
+
+    getStream(sourceBuffer);
+
+    video.play();
+  }
+
+  function onEnd(ev) {
+    console.log('source ended', ev);
+  }
+
+  ms.addEventListener('sourceopen', onOpen, false);
+  ms.addEventListener('webkitsourceopen', onOpen, false);
+  ms.addEventListener('webkitsourceended', onOpen, false);
 </script>
 </body>
 </html>

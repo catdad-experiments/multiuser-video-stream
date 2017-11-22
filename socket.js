@@ -16,7 +16,13 @@ module.exports = function(server) {
     var stream = videoStream.get();
 
     function onChunk(chunk) {
-      socket.send(chunk);
+      try {
+        socket.send(chunk);
+      } catch (e) {
+        // TODO figure out if other errors are possible too
+        // `Error: not opened`
+        console.log('socket was closed when trying to write, NBD');
+      }
     }
 
     function addEvents() {

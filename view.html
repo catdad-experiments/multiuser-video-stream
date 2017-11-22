@@ -41,30 +41,47 @@
 
     console.log(buffer);
 
+    function closeSocket() {
+      if (socket.readyState === socket.OPEN) {
+        socket.close(1000, '');
+      }
+    }
+
     function writeBuffer() {
       console.log('WRITING BUFFER TO MEDIA STREAM');
       sourceBuffer.appendBuffer(buffer);
       buffer = new Uint8Array();
+
+      video.play();
     }
 
     function readIntoBuffer(blob) {
+      // temp: disable buffer when it gets too big,
+      // TODO figure out how to actually play video so buffer flushes
       if (buffer.length > 100000) {
+        console.log('CLOSING SOCKET');
+        closeSocket();
         return;
       }
 
       var fileReader = new FileReader();
 
       fileReader.onload = function (ev) {
+        console.log('finished reading buffer');
         buffer = combine(buffer, new Uint8Array(ev.target.result));
 
         if (flushed) {
           writeBuffer();
         }
+
+        if (video.paused) {
+          console.log('PLAYING VIDEO');
+          video.play();
+        }
       };
 
       fileReader.readAsArrayBuffer(blob);
     }
-
 
     sourceBuffer.addEventListener('updateend', function (ev) {
       flushed = true;
@@ -91,8 +108,6 @@
     var sourceBuffer = ms.addSourceBuffer(mime);
 
     getStream(sourceBuffer);
-
-    video.play();
   }
 
   function onEnd(ev) {
